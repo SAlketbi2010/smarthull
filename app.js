@@ -2,6 +2,7 @@
 const $=id=>document.getElementById(id),scene=$('scene'),ctx=scene.getContext('2d'),plot=$('plot'),pc=plot.getContext('2d');
 const state={mass:350,span:200,width:50,thickness:3,modulus:2.3,gauge:50,maxMass:1000,stepSize:100,cycles:3,repeats:5,coefficient:.00025,hyst:100,drift:0,noise:2,unload:false,cycle:0};
 let scientific=false;
+let runOutcome=null,runStart=0,runLimit=2000,outlookTimer=null,sourceRestore=null,acquisitionStatus='idle',guideText='';
 let outlookProgress=0,outlookAvailable=false,outlookFrame=null,outlookCamera=null;
 
 let history=[],reading={},completed=[],running=false,timer=null,queue=[],position=0,seed=4571,yaw=-.65,pitch=.48,zoom=1,lastPointer=null,chartPoints=[],fit=null,runId=0;
@@ -11,13 +12,43 @@ function calculate(s,n1=0,n2=0){const f=s.mass*.00981,L=s.span/1000,b=s.width/10
 const number=x=>Number.isFinite(x)?Math.round(x).toLocaleString():'—';
 function preview(){reading=calculate(state);update();}
 function capture(manual=false){reading=calculate(state,normal(),normal());history.push({...state,...reading,cycle:manual?0:state.cycle,sample:history.length+1});fit=null;update();}
-function stop(){running=false;clearInterval(timer);timer=null;queue=[];$('run').textContent='Run acquisition';lock(false);}
-function lock(on){for(const id of ['span','width','thickness','modulus','gauge','maxMass','stepSize','cycles','repeats','coefficient','hyst','noise','mass','sample'])$(id).disabled=on;}
-function clearData(){returnToRig();outlookAvailable=false;stop();history=[];completed=[];state.cycle=0;runId=0;fit=null;$('fitResult').textContent='Run at least two complete cycles to fit a calibration.';$('pointDetail').textContent='No reading selected.';}
-function update(){for(const id of ['mass','drift','noise'])$(id).value=state[id];$('massVal').textContent=state.mass+' g';$('driftVal').textContent=(state.drift>=0?'+':'')+state.drift+'%';$('noiseVal').textContent=state.noise+' mV';$('reference').innerHTML=number(reading.strain)+' <small>µε</small>';$('gaugeStrain').innerHTML=number(reading.gaugeStrain)+' <small>µε</small>';$('deflection').innerHTML=reading.deflection.toFixed(3)+' <small>mm</small>';$('raw').textContent=number(reading.raw)+' µε';$('ratio').textContent=number(reading.estimate)+' µε';$('rawError').textContent='Error vs εg: '+number(reading.raw-reading.gaugeStrain)+' µε';$('ratioError').textContent='Error vs εg: '+number(reading.estimate-reading.gaugeStrain)+' µε';$('senseV').textContent=reading.sense.toFixed(4)+' V';$('refV').textContent=reading.ref.toFixed(4)+' V';$('ratioV').textContent=reading.ratio.toFixed(4);$('senseBar').style.width=Math.min(100,reading.sense/3.3*100)+'%';$('refBar').style.width=Math.min(100,reading.ref/3.3*100)+'%';$('phase').textContent=(running?'CYCLE '+state.cycle+' / ':'')+(state.unload?'UNLOADING':'LOADING');$('geometryLabel').textContent='L = '+state.span+' mm · b = '+state.width+' mm · h = '+state.thickness+' mm';$('sampleCount').textContent=history.length+' samples · '+completed.length+' complete cycles';$('acquisition').textContent=running?'Acquiring '+(position+1)+' / '+queue.length+' load steps.':history.length?'Acquisition stopped. '+completed.length+' complete cycles retained.':'No experiment running.';let warnings=[];if(reading.deflection/state.span>.05)warnings.push('δ/L > 5%: small-deflection assumption questionable');if(state.span/state.thickness<20)warnings.push('L/h < 20: shear effects may matter');if(state.width/state.span>.3)warnings.push('b/L > 0.3: assess plate effects');if(reading.clipped)warnings.push('Nonpositive detector value floored for logarithm');$('validity').textContent=warnings.length?warnings.join(' · '):'Flat-beam approximation · δ/L = '+(100*reading.deflection/state.span).toFixed(2)+'% · model checks are indicative, not validation';$('validity').classList.toggle('warning',!!warnings.length);$('dataRows').innerHTML=history.slice(-8).reverse().map(r=>'<tr><td>'+r.sample+'</td><td>'+(r.cycle||'Manual')+' / '+(r.unload?'Unload':'Load')+'</td><td>'+r.mass+'</td><td>'+r.gaugeStrain.toFixed(1)+'</td><td>'+r.sense.toFixed(4)+'</td><td>'+r.ref.toFixed(4)+'</td><td>'+r.ratio.toFixed(4)+'</td></tr>').join('');if(!fit)$('fitResult').textContent=completed.length>=2?'Data ready. Fit a model to evaluate the final complete cycle.':'Run at least two complete cycles to fit a calibration.';updateWarning();$('run').textContent=running?'Stop demonstration':(scientific?'Run acquisition':'Run demonstration');if(!scientific)$('acquisition').textContent=running?'Loading and unloading the specimen…':(history.length?'Demonstration stopped. Adjust the weight to explore.':'Start with the weight slider, or run a demonstration.');drawScene();drawPlot();}
+function stop(){running=false;clearTimeout(timer);clearInterval(timer);if(acquisitionStatus==='running')acquisitionStatus='stopped';timer=null;queue=[];$('run').textContent='Run acquisition';lock(false);}
+function lock(on){for(const id of ['span','width','thickness','modulus','gauge','maxMass','stepSize','cycles','repeats','coefficient','hyst','noise','mass','sample','warningLimit','disturbSource'])$(id).disabled=on;}
+function clearData(){cancelOutlookDelay();runOutcome=null;guideText='';acquisitionStatus='idle';returnToRig();outlookAvailable=false;stop();history=[];completed=[];state.cycle=0;runId=0;fit=null;$('fitResult').textContent='Run at least two complete cycles to fit a calibration.';$('pointDetail').textContent='No reading selected.';}
+function update(){for(const id of ['mass','drift','noise'])$(id).value=state[id];$('massVal').textContent=state.mass+' g';$('driftVal').textContent=(state.drift>=0?'+':'')+state.drift+'%';$('noiseVal').textContent=state.noise+' mV';$('reference').innerHTML=number(reading.strain)+' <small>µε</small>';$('gaugeStrain').innerHTML=number(reading.gaugeStrain)+' <small>µε</small>';$('deflection').innerHTML=reading.deflection.toFixed(3)+' <small>mm</small>';$('raw').textContent=number(reading.raw)+' µε';$('ratio').textContent=number(reading.estimate)+' µε';$('rawError').textContent='Error vs εg: '+number(reading.raw-reading.gaugeStrain)+' µε';$('ratioError').textContent='Error vs εg: '+number(reading.estimate-reading.gaugeStrain)+' µε';$('senseV').textContent=reading.sense.toFixed(4)+' V';$('refV').textContent=reading.ref.toFixed(4)+' V';$('ratioV').textContent=reading.ratio.toFixed(4);$('senseBar').style.width=Math.min(100,reading.sense/3.3*100)+'%';$('refBar').style.width=Math.min(100,reading.ref/3.3*100)+'%';$('phase').textContent=(running?'CYCLE '+state.cycle+' / ':'')+(state.unload?'UNLOADING':'LOADING');$('geometryLabel').textContent='L = '+state.span+' mm · b = '+state.width+' mm · h = '+state.thickness+' mm';$('sampleCount').textContent=history.length+' samples · '+completed.length+' complete cycles';$('acquisition').textContent=running?'Acquiring '+(position+1)+' / '+queue.length+' load steps.':history.length?'Acquisition stopped. '+completed.length+' complete cycles retained.':'No experiment running.';let warnings=[];if(reading.deflection/state.span>.05)warnings.push('δ/L > 5%: small-deflection assumption questionable');if(state.span/state.thickness<20)warnings.push('L/h < 20: shear effects may matter');if(state.width/state.span>.3)warnings.push('b/L > 0.3: assess plate effects');if(reading.clipped)warnings.push('Nonpositive detector value floored for logarithm');$('validity').textContent=warnings.length?warnings.join(' · '):'Flat-beam approximation · δ/L = '+(100*reading.deflection/state.span).toFixed(2)+'% · model checks are indicative, not validation';$('validity').classList.toggle('warning',!!warnings.length);$('dataRows').innerHTML=history.slice(-8).reverse().map(r=>'<tr><td>'+r.sample+'</td><td>'+(r.cycle||'Manual')+' / '+(r.unload?'Unload':'Load')+'</td><td>'+r.mass+'</td><td>'+r.gaugeStrain.toFixed(1)+'</td><td>'+r.sense.toFixed(4)+'</td><td>'+r.ref.toFixed(4)+'</td><td>'+r.ratio.toFixed(4)+'</td></tr>').join('');if(!fit)$('fitResult').textContent=completed.length>=2?'Data ready. Fit a model to evaluate the final complete cycle.':'Run at least two complete cycles to fit a calibration.';updateWarning();$('run').textContent=running?'Stop demonstration':(scientific?'Run acquisition':'Run guided demonstration');if(!scientific)$('acquisition').textContent=running?'Loading and unloading the specimen…':(history.length?'Demonstration stopped. Adjust the weight to explore.':'Start with the weight slider, or run a demonstration.');updateCouncilUI();drawScene();drawPlot();}
 for(const id of ['span','width','thickness','modulus','gauge','maxMass','stepSize','cycles','repeats','coefficient','hyst','noise'])$(id).addEventListener('change',e=>{const v=+e.target.value;if(!e.target.checkValidity()||!Number.isFinite(v)){e.target.reportValidity();e.target.value=state[id];return;}clearData();state[id]=v;state.gauge=Math.min(state.gauge,state.span);$('gauge').value=state.gauge;state.mass=Math.min(state.mass,state.maxMass);$('mass').max=state.maxMass;state.unload=false;preview();});
-$('mass').oninput=e=>{returnToRig();const m=+e.target.value;state.unload=m<state.mass;state.mass=m;preview();};$('drift').oninput=e=>{state.drift=+e.target.value;preview();};$('sample').onclick=()=>capture(true);$('reset').onclick=()=>{clearData();seed=4571;state.unload=false;preview();};
-$('run').onclick=()=>{if(running){stop();update();return;}returnToRig();outlookAvailable=false;running=true;queue=[];position=0;lock(true);$('run').textContent='Stop acquisition';for(let c=0;c<state.cycles;c++){const cycle=++runId,loads=[0];for(let m=state.stepSize;m<state.maxMass;m+=state.stepSize)loads.push(m);loads.push(state.maxMass);loads.forEach(m=>queue.push({mass:m,unload:false,cycle}));loads.slice(0,-1).reverse().forEach(m=>queue.push({mass:m,unload:true,cycle}));queue[queue.length-1].end=true;}function tick(){const q=queue[position];Object.assign(state,{mass:q.mass,unload:q.unload,cycle:q.cycle});for(let j=0;j<state.repeats;j++)capture();if(q.end)completed.push(q.cycle);position++;const finished=position>=queue.length;if(finished)stop();update();if(finished){outlookAvailable=true;startOutlook();}}tick();if(running)timer=setInterval(tick,150);};
+$('mass').oninput=e=>{cancelOutlookDelay();guideText='';returnToRig();const m=+e.target.value;state.unload=m<state.mass;state.mass=m;preview();};$('drift').oninput=e=>{sourceRestore=null;state.drift=+e.target.value;preview();};$('sample').onclick=()=>capture(true);$('reset').onclick=()=>{clearData();seed=4571;state.unload=false;preview();};
+$('run').onclick=()=>{
+ if(running){stop();guideText='Acquisition stopped early. Only complete cycles are eligible for calibration.';update();return;}
+ cancelOutlookDelay();returnToRig();outlookAvailable=false;runOutcome=null;
+ running=true;acquisitionStatus='running';queue=[];position=0;runStart=history.length;runLimit=+$('warningLimit').value;
+ const guided=!scientific;let heldAlert=false;lock(true);
+ for(let c=0;c<state.cycles;c++){
+  const cycle=++runId,loads=[0];for(let m=state.stepSize;m<state.maxMass;m+=state.stepSize)loads.push(m);loads.push(state.maxMass);
+  loads.forEach(m=>queue.push({mass:m,unload:false,cycle,first:c===0}));
+  loads.slice(0,-1).reverse().forEach(m=>queue.push({mass:m,unload:true,cycle,first:c===0}));queue[queue.length-1].end=true;
+ }
+ function tick(){
+  if(!running)return;
+  const q=queue[position];Object.assign(state,{mass:q.mass,unload:q.unload,cycle:q.cycle});
+  for(let j=0;j<state.repeats;j++)capture();if(q.end)completed.push(q.cycle);
+  let delay=guided?300:150;
+  guideText=q.unload?'Unloading: strain decreases as the weight is removed.':'Loading: compare the mechanical reference with the simulated optical estimate.';
+  if(guided&&position===0){delay=1500;guideText='Baseline: no applied load. Both estimates should be near zero.';}
+  else if(guided&&q.first&&!heldAlert&&reading.estimate>=runLimit){delay=2600;heldAlert=true;guideText='Demo threshold crossed. The warning follows the simulated sensor estimate, not a hull failure criterion.';}
+  else if(guided&&q.first&&q.mass===state.maxMass){delay=1800;guideText='Maximum load: inspect the reference and sensor estimate before unloading.';}
+  position++;
+  if(position>=queue.length){
+   const rows=history.slice(runStart),cycles=[...new Set(rows.map(r=>r.cycle))].filter(c=>completed.includes(c));
+   runOutcome={peak:Math.max(...rows.map(r=>r.estimate)),limit:runLimit,crossed:rows.some(r=>r.estimate>=runLimit),cycles:cycles.length,samples:rows.length};
+   acquisitionStatus='complete';stop();outlookAvailable=true;
+   guideText='Demonstration complete. Review the retained bench results; the boat outlook follows in five seconds.';
+   update();outlookTimer=setTimeout(()=>{outlookTimer=null;startOutlook();},5000);return;
+  }
+  update();timer=setTimeout(tick,delay);
+ }
+ tick();
+};
 $('exaggerate').onchange=()=>drawScene();$('plotMode').onchange=drawPlot;
 $('export').onclick=()=>{const keys=['sample','cycle','mass','unload','span','width','thickness','modulus','gauge','maxMass','stepSize','repeats','drift','noise','coefficient','hyst','force','strain','gaugeStrain','deflection','sense','ref','ratio','raw','estimate','clipped'];const labels=['sample','cycle_0_is_manual','mass_g','unloading','span_mm','width_mm','thickness_mm','E_GPa','gauge_length_mm','max_mass_g','step_g','readings_per_step','drift_percent','noise_mV_RMS','k_per_microstrain','Hmax_microstrain','force_N','center_microstrain','gauge_microstrain','deflection_mm','Vs_V','Vr_V','Vs_over_Vr','raw_microstrain','ratio_microstrain','log_floor_applied'];const rows=history.map(r=>['synthetic',completed.includes(r.cycle),...keys.map(k=>r[k])].join(','));const csv=['data_type,complete_cycle,'+labels.join(','),...rows].join('\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const a=document.createElement('a');a.href=url;a.download='smarthull-synthetic-experiment.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 function solve(A,b){const n=b.length,a=A.map((r,i)=>[...r,b[i]]);for(let i=0;i<n;i++){let p=i;for(let j=i+1;j<n;j++)if(Math.abs(a[j][i])>Math.abs(a[p][i]))p=j;[a[i],a[p]]=[a[p],a[i]];if(Math.abs(a[i][i])<1e-10)throw Error('Insufficient variation for this calibration.');const d=a[i][i];for(let k=i;k<=n;k++)a[i][k]/=d;for(let j=0;j<n;j++)if(j!==i){const m=a[j][i];for(let k=i;k<=n;k++)a[j][k]-=m*a[i][k];}}return a.map(r=>r[n]);}
@@ -74,18 +105,24 @@ function syncOutlookUI(){
  const active=outlookProgress>0;
  $('outlookPanel').hidden=!active;
  $('outlookReturn').hidden=active||!outlookAvailable;
+ $('strainWarning').hidden=active;
+ $('benchLabel').textContent=active?'BENCH MODEL · FINAL UNLOADED READING · NOT BOAT DATA':'BENCH SIMULATION · CURRENT READING';
+ $('summaryBoat').hidden=active;
+ if(runOutcome)$('summaryNote').textContent=active?'The illustrated boat has no measured strain data. The values above are retained from the completed bench run.':'The run ended unloaded. Its peak and threshold result remain here even when the live values return to zero.';
  $('sceneTitle').textContent=active?'From a sensing region to the whole boat':'The test rig';
  $('sceneCaption').textContent=active?'Future concept · illustrative sensor locations':'Drag to rotate · wheel to zoom · dashed fiber: underside';
  $('scene').closest('.apparatus').classList.toggle('outlook-active',active);
- if(active){$('phase').textContent='FUTURE APPLICATION';$('acquisition').textContent='Acquisition complete. Your bench data is retained below.';}
+ if(active){$('guidedNarration').textContent='Future outlook: illustrative sensor locations on a boat. No vessel response is being simulated.';$('phase').textContent='FUTURE APPLICATION';$('acquisition').textContent='Acquisition complete. Your bench data is retained below.';}
 }
 function returnToRig(){
+ cancelOutlookDelay();
  if(outlookFrame!==null){cancelAnimationFrame(outlookFrame);outlookFrame=null;}
  outlookProgress=0;
  if(outlookCamera){({yaw,pitch,zoom}=outlookCamera);outlookCamera=null;}
  syncOutlookUI();
 }
 function startOutlook(){
+ cancelOutlookDelay();
  if(!outlookAvailable||running)return;
  if(outlookFrame!==null)cancelAnimationFrame(outlookFrame);
  if(!outlookCamera)outlookCamera={yaw,pitch,zoom};
@@ -146,7 +183,24 @@ function drawBoatOutlook(){
   ctx.restore();
  }
 }
-$('backToRig').onclick=()=>{returnToRig();update();};
+$('backToRig').onclick=()=>{returnToRig();guideText='Bench results retained. Adjust the load to explore, or replay the future outlook.';update();};
 $('showOutlook').onclick=startOutlook;
 $('replayOutlook').onclick=()=>{returnToRig();startOutlook();};
+
+function cancelOutlookDelay(){if(outlookTimer!==null){clearTimeout(outlookTimer);outlookTimer=null;}}
+function updateCouncilUI(){
+ $('sensorEstimate').innerHTML=number(reading.estimate)+' <small>µε</small>';
+ $('driftRaw').textContent=number(reading.raw)+' µε';$('driftRatio').textContent=number(reading.estimate)+' µε';
+ $('driftRawError').textContent='Error vs reference: '+number(reading.raw-reading.gaugeStrain)+' µε';
+ $('driftRatioError').textContent='Error vs reference: '+number(reading.estimate-reading.gaugeStrain)+' µε';
+ $('disturbSource').textContent=sourceRestore===null?'Disturb the light source (+20%)':'Restore previous brightness';
+ $('driftExplanation').textContent='Current source drift: '+(state.drift>=0?'+':'')+state.drift+'%. Applied load: '+state.mass+' g. Live preview is noiseless; captured readings include the selected detector noise.';
+ $('guidedNarration').textContent=guideText||'Apply a load, compare the two strain values, then test the reference channel.';
+ $('runSummary').hidden=!runOutcome;
+ if(runOutcome){$('peakResult').textContent=number(runOutcome.peak)+' µε';$('limitResult').textContent=number(runOutcome.limit)+' µε';$('crossResult').textContent=runOutcome.crossed?'Yes':'No';$('cyclesResult').textContent=runOutcome.cycles;$('summaryNote').textContent='The run ended unloaded. '+runOutcome.samples+' synthetic readings were recorded. The peak and threshold result above are retained from that run.';}
+ if(acquisitionStatus==='complete')$('acquisition').textContent='Demonstration complete. Bench results retained.';
+ else if(acquisitionStatus==='stopped')$('acquisition').textContent='Acquisition stopped before completion.';
+}
+$('disturbSource').onclick=()=>{if(running)return;cancelOutlookDelay();returnToRig();if(sourceRestore===null){sourceRestore=state.drift;state.drift=20;}else{state.drift=sourceRestore;sourceRestore=null;}guideText='Same load, different light intensity. Compare sensing-only and normalized estimates below.';preview();};
+$('summaryBoat').onclick=()=>{cancelOutlookDelay();startOutlook();};
 preview();
