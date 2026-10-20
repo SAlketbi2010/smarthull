@@ -30,3 +30,7 @@ Filtering omits 20 mm Trial 1 (movement reported) and 30 mm Trial 2 (possible ta
 - Ohtsuki (1986), https://doi.org/10.1299/jsme1958.29.1988
 - Batista (2014), https://arxiv.org/pdf/1408.3094
 
+## Confirmed sensing routing
+
+One continuous sensing fiber crosses the specimen, turns around and returns in a second pass. The reference loop is separate. The 3D view shows the two-pass topology, a wooden base and metal supports based on prototype photographs. Pass spacing, turn radius and attachment are illustrative, not measured. No factor-of-two correction is applied to measured response or strain.
+

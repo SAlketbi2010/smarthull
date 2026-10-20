@@ -54,11 +54,20 @@ function drawPlot(){
 }
 function drawScene(){
  const canvas=$('scene');[W,H]=size(canvas,ctx);ctx.clearRect(0,0,W,H);faces=[];if(outlookProgress){drawBoatOutlook();return;}
- const fiberOnly=kind==='fiber'&&mode==='replay',d=shownDeflection;box(0,-5,0,290,8,235,['#d4dfe1','#dce5e6','#edf1f0']);
- if(!fiberOnly){for(const x of [-100,100])box(x,29,0,9,60,215,['#708994','#8fa4ad','#b0c0c5']);for(let i=0;i<32;i++){const x=-130+i*260/32,nx=-130+(i+1)*260/32,yy=u=>60-d*Math.max(0,1-(u/100)**2);face([[x,yy(x),-105],[nx,yy(nx),-105],[nx,yy(nx),105],[x,yy(x),105]],i%2?'#b9d5dc':'#b6d1da');}}
- faces.sort((a,b)=>b.depth-a.depth);for(const f of faces){ctx.beginPath();f.points.forEach((p,i)=>{const q=project(p);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]);});ctx.closePath();ctx.fillStyle=f.color;ctx.fill();ctx.strokeStyle='rgba(64,96,108,.12)';ctx.stroke();}
- const path=[];for(let i=0;i<=80;i++){const x=-125+i*250/80;path.push([x,fiberOnly?65-d*Math.exp(-((x/48)**2)):62-d*Math.max(0,1-(x/100)**2),fiberOnly?15:0]);}line3(path,'#e09c4d',3,true);
- ctx.font='11px system-ui';ctx.fillStyle='#456370';ctx.textAlign='left';ctx.fillText(fiberOnly?'Fiber shape illustration · bend radius unmeasured':'Plate and fiber routing illustration · span ≈228.6 mm',16,25);
+ const fiberOnly=kind==='fiber'&&mode==='replay',d=shownDeflection;box(0,-6,0,290,12,235,['#8e6b49','#a07b54','#bb9972']);faces.forEach(f=>f.layer=0);
+ if(!fiberOnly){for(const x of [-100,100]){box(x,3,0,26,6,48,['#708994','#8fa4ad','#b0c0c5']);box(x,31,12,10,56,12,['#708994','#8fa4ad','#b0c0c5']);box(x,58,0,20,4,42,['#708994','#8fa4ad','#b0c0c5']);}faces.forEach(f=>{if(f.layer==null)f.layer=1;});for(let i=0;i<32;i++){const x=-130+i*260/32,nx=-130+(i+1)*260/32,yy=u=>60-d*Math.max(0,1-(u/100)**2);face([[x,yy(x),-105],[nx,yy(nx),-105],[nx,yy(nx),105],[x,yy(x),105]],i%2?'#b9d5dc':'#b6d1da');}}
+ faces.sort((a,b)=>(a.layer??2)-(b.layer??2)||b.depth-a.depth);for(const f of faces){ctx.beginPath();f.points.forEach((p,i)=>{const q=project(p);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]);});ctx.closePath();ctx.fillStyle=f.color;ctx.fill();ctx.strokeStyle='rgba(64,96,108,.12)';ctx.stroke();}
+ const path=[],surface=x=>62-d*Math.max(0,1-(x/100)**2);
+ if(fiberOnly){for(let i=0;i<=80;i++){const x=-125+i*250/80;path.push([x,65-d*Math.exp(-((x/48)**2)),15]);}}
+ else{
+  // One continuous sensing fiber: outbound pass, U-turn, return pass.
+  for(let i=0;i<=80;i++){const x=-145+i*257/80;path.push([x,surface(x),-14]);}
+  for(let i=1;i<=36;i++){const a=Math.PI*i/36,x=112+14*Math.sin(a);path.push([x,surface(x),-14*Math.cos(a)]);}
+  for(let i=1;i<=80;i++){const x=112-i*257/80;path.push([x,surface(x),14]);}
+ }
+ line3(path,'#e09c4d',3,true);
+ if(!fiberOnly){for(const [x,z,dir] of [[-35,-14,1],[35,14,-1]])line3([[x-6*dir,surface(x-6*dir),z-4],[x,surface(x),z],[x-6*dir,surface(x-6*dir),z+4]],'#805017',2);}
+ ctx.font='11px system-ui';ctx.fillStyle='#456370';ctx.textAlign='left';ctx.fillText(fiberOnly?'Fiber shape illustration · bend radius unmeasured':'One continuous fiber · two passes + U-turn',16,25);
 }
 function initialize(){
  ctx=$('scene').getContext('2d');tableRows();populate();$('experimentType').addEventListener('change',populate);$('trial').addEventListener('change',()=>{stop();trial=M[kind].find(t=>t.id===$('trial').value);stage='baseline';update();});

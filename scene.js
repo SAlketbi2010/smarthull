@@ -1,6 +1,6 @@
 function size(canvas,c){const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);c.setTransform(dpr,0,0,dpr,0,0);return[rect.width,rect.height];}
 let W=0,H=0,faces=[];
-function transform(p){const x=p[0]*state.span/200,y=p[1],z=p[2]*state.width/210,xx=x*Math.cos(yaw)+z*Math.sin(yaw),zz=-x*Math.sin(yaw)+z*Math.cos(yaw);return[xx,y*Math.cos(pitch)-zz*Math.sin(pitch),y*Math.sin(pitch)+zz*Math.cos(pitch)];}
+function transform(p){const x=p[0]*state.span/200,y=p[1],z=p[2]*state.width/210,xx=x*Math.cos(yaw)+z*Math.sin(yaw),zz=-x*Math.sin(yaw)+z*Math.cos(yaw);return[xx,y*Math.cos(pitch)+zz*Math.sin(pitch),-y*Math.sin(pitch)+zz*Math.cos(pitch)];}
 function project(p){const [x,y,z]=transform(p),scale=Math.min(W/420,H/280)*zoom*(1-.72*outlookProgress),depth=650/(650+z);return[W*.5+x*scale*depth,H*.65-y*scale*depth,z];}
 function face(points,color){faces.push({points,color,depth:points.reduce((a,p)=>a+transform(p)[2],0)/points.length});}
 function box(x,y,z,w,h,d,colors=['#929ea5','#a8b4ba','#c0cbd0']){const a=[x-w/2,y-h/2,z-d/2],b=[x+w/2,y-h/2,z-d/2],c=[x+w/2,y-h/2,z+d/2],e=[x-w/2,y-h/2,z+d/2];const tops=[a,b,c,e].map(p=>[p[0],p[1]+h,p[2]]);face([a,b,tops[1],tops[0]],colors[0]);face([b,c,tops[2],tops[1]],colors[1]);face([c,e,tops[3],tops[2]],colors[0]);face([e,a,tops[0],tops[3]],colors[1]);face(tops,colors[2]);}
@@ -11,7 +11,7 @@ function drawBoatOutlook(){
  const t=outlookProgress,opacity=Math.min(1,Math.max(0,(t-.12)/.65));
  if(opacity<=0)return;
  const scale=Math.min(W/440,H/260)*zoom*(1.65-.65*t),cy=H*.53;
- const tr=p=>{const[x,y,z]=p,xx=x*Math.cos(yaw)+z*Math.sin(yaw),zz=-x*Math.sin(yaw)+z*Math.cos(yaw);return[xx,y*Math.cos(pitch)-zz*Math.sin(pitch),y*Math.sin(pitch)+zz*Math.cos(pitch)];};
+ const tr=p=>{const[x,y,z]=p,xx=x*Math.cos(yaw)+z*Math.sin(yaw),zz=-x*Math.sin(yaw)+z*Math.cos(yaw);return[xx,y*Math.cos(pitch)+zz*Math.sin(pitch),-y*Math.sin(pitch)+zz*Math.cos(pitch)];};
  const pr=p=>{const[x,y,z]=tr(p),depth=850/(850+z);return[W/2+x*scale*depth,cy-y*scale*depth];};
  const hullFaces=[];
  const add=(pts,color)=>hullFaces.push({pts,color,z:pts.reduce((a,p)=>a+tr(p)[2],0)/pts.length});
@@ -58,4 +58,5 @@ function drawBoatOutlook(){
   ctx.restore();
  }
 }
+
 

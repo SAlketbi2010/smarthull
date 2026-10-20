@@ -93,5 +93,13 @@
     "thickness_mm": 2,
     "support_span_mm": 228.6,
     "unloaded_height_mm": 60
+  },
+  "sensing_fiber_routing": {
+    "continuous_path": true,
+    "passes_across_plate": 2,
+    "turn": "U-turn at one end",
+    "reference_path": "separate loop",
+    "routing_dimensions": "not measured; visualization illustrative",
+    "factor_of_two_correction_applied": false
   }
 }
