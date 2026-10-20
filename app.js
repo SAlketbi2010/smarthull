@@ -41,16 +41,17 @@ function update(){
  $('sceneTitle').textContent=outlookProgress?'Future hull concept':!exploring&&kind==='fiber'?'Direct fiber bending':'Polycarbonate bending experiment';
  ['baseline','bent','released'].forEach(s=>$(s+'Stage').setAttribute('aria-pressed',s===stage));document.querySelectorAll('[data-trial]').forEach(row=>row.classList.toggle('selected',!exploring&&row.dataset.trial===trial.id));drawPlot();drawScene();
 }
+function themeColor(light,dark){return document.documentElement.dataset.theme==='dark'?dark:light;}
 function drawPlot(){
  const canvas=$('plot'),c=canvas.getContext('2d'),[w,h]=size(canvas,c);c.clearRect(0,0,w,h);
  const left=57,right=25,top=22,bottom=48,pw=w-left-right,ph=h-top-bottom,X=x=>left+x/35*pw,Y=y=>top+ph-y/4.5*ph;
- c.font='11px system-ui';c.fillStyle='#526977';c.strokeStyle='#e2e8eb';
+ c.font='11px system-ui';c.fillStyle=themeColor('#526977','#b7cbd5');c.strokeStyle=themeColor('#e2e8eb','#304450');
  for(let y=0;y<=4;y++){c.beginPath();c.moveTo(left,Y(y));c.lineTo(w-right,Y(y));c.stroke();c.textAlign='right';c.fillText(y,left-9,Y(y)+4);}
- c.strokeStyle='#71838b';c.beginPath();c.moveTo(left,top);c.lineTo(left,top+ph);c.lineTo(w-right,top+ph);c.stroke();c.textAlign='center';for(const x of [0,10,20,30])c.fillText(x,X(x),top+ph+19);c.fillText('Reported centre deflection (mm)',left+pw/2,h-7);
+ c.strokeStyle=themeColor('#71838b','#88a1ad');c.beginPath();c.moveTo(left,top);c.lineTo(left,top+ph);c.lineTo(w-right,top+ph);c.stroke();c.textAlign='center';for(const x of [0,10,20,30])c.fillText(x,X(x),top+ph+19);c.fillText('Reported centre deflection (mm)',left+pw/2,h-7);
  c.save();c.translate(13,top+ph/2);c.rotate(-Math.PI/2);c.fillText('Normalized decrease (%)',0,0);c.restore();
- for(const [key,color,dash] of [['all','#80969f',[6,4]],['filtered','#896344',[]]]){const f=M.fits[key];c.strokeStyle=color;c.lineWidth=1.8;c.setLineDash(dash);c.beginPath();c.moveTo(X(10),Y(f.slope*10+f.intercept));c.lineTo(X(30),Y(f.slope*30+f.intercept));c.stroke();}c.setLineDash([]);
- M.dual.forEach((t,i)=>{const x=X(t.deflection),y=Y(t.drop);c.lineWidth=1.8;c.strokeStyle=t.flag?'#aa7138':'#315f70';c.fillStyle=t.flag?'#fff':'#315f70';c.beginPath();if(t.flag)c.rect(x-4,y-4,8,8);else c.arc(x,y,4,0,Math.PI*2);c.fill();c.stroke();c.font='10px system-ui';c.fillStyle='#385360';c.textAlign=i<3?'left':'right';c.fillText(`${t.deflection} mm T${i===1||i===3||i===0?1:2}`,x+(i<3?8:-8),y+(i===2?-10:16));});
- if(mode==='explore'){const e=M.explore(Number($('deflectionControl').value),$('fitChoice').value);c.strokeStyle='#183e50';c.lineWidth=2;c.beginPath();c.arc(X(e.deflection),Y(e.drop),7,0,Math.PI*2);c.stroke();}
+ for(const [key,color,dash] of [['all',themeColor('#80969f','#9bb4bf'),[6,4]],['filtered',themeColor('#896344','#e3b081'),[]]]){const f=M.fits[key];c.strokeStyle=color;c.lineWidth=1.8;c.setLineDash(dash);c.beginPath();c.moveTo(X(10),Y(f.slope*10+f.intercept));c.lineTo(X(30),Y(f.slope*30+f.intercept));c.stroke();}c.setLineDash([]);
+ M.dual.forEach((t,i)=>{const x=X(t.deflection),y=Y(t.drop);c.lineWidth=1.8;c.strokeStyle=t.flag?themeColor('#aa7138','#e9b56d'):themeColor('#315f70','#79c4d8');c.fillStyle=t.flag?themeColor('#fff','#172630'):themeColor('#315f70','#79c4d8');c.beginPath();if(t.flag)c.rect(x-4,y-4,8,8);else c.arc(x,y,4,0,Math.PI*2);c.fill();c.stroke();c.font='10px system-ui';c.fillStyle=themeColor('#385360','#c4d9e2');c.textAlign=i<3?'left':'right';c.fillText(`${t.deflection} mm T${i===1||i===3||i===0?1:2}`,x+(i<3?8:-8),y+(i===2?-10:16));});
+ if(mode==='explore'){const e=M.explore(Number($('deflectionControl').value),$('fitChoice').value);c.strokeStyle=themeColor('#183e50','#eefaff');c.lineWidth=2;c.beginPath();c.arc(X(e.deflection),Y(e.drop),7,0,Math.PI*2);c.stroke();}
 }
 function drawScene(){
  const canvas=$('scene');[W,H]=size(canvas,ctx);ctx.clearRect(0,0,W,H);faces=[];if(outlookProgress){drawBoatOutlook();return;}
@@ -67,9 +68,13 @@ function drawScene(){
  }
  line3(path,'#e09c4d',3,true);
  if(!fiberOnly){for(const [x,z,dir] of [[-35,-14,1],[35,14,-1]])line3([[x-6*dir,surface(x-6*dir),z-4],[x,surface(x),z],[x-6*dir,surface(x-6*dir),z+4]],'#805017',2);}
- ctx.font='11px system-ui';ctx.fillStyle='#456370';ctx.textAlign='left';ctx.fillText(fiberOnly?'Fiber shape illustration · bend radius unmeasured':'One continuous fiber · two passes + U-turn',16,25);
+ ctx.font='11px system-ui';ctx.fillStyle=themeColor('#456370','#c4d9e2');ctx.textAlign='left';ctx.fillText(fiberOnly?'Fiber shape illustration · bend radius unmeasured':'One continuous fiber · two passes + U-turn',16,25);
 }
 function initialize(){
+ const toggle=$('themeToggle');
+ const syncTheme=()=>{const dark=document.documentElement.dataset.theme==='dark';toggle.textContent=dark?'Light mode':'Dark mode';toggle.setAttribute('aria-pressed',String(dark));};
+ syncTheme();toggle.addEventListener('click',()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('smarthull-theme',document.documentElement.dataset.theme);}catch(e){}syncTheme();update();});
+
  ctx=$('scene').getContext('2d');tableRows();populate();$('experimentType').addEventListener('change',populate);$('trial').addEventListener('change',()=>{stop();trial=M[kind].find(t=>t.id===$('trial').value);stage='baseline';update();});
  ['baseline','bent','released'].forEach(s=>$(s+'Stage').addEventListener('click',()=>selectStage(s)));
  for(const m of ['replay','explore'])$(m+'Mode').addEventListener('click',()=>{stop();mode=m;outlookProgress=0;$('outlookPanel').hidden=true;update();});for(const id of ['deflectionControl','fitChoice'])$(id).addEventListener('input',update);
@@ -81,6 +86,5 @@ function initialize(){
  $('export').addEventListener('click',()=>{const rows=[['dataset','trial','deflection_mm','baseline','bent','released','unit','decrease_pct','calculated_microstrain','note']];for(const k of ['dual','plate','fiber'])M[k].forEach(t=>rows.push([k,t.label,t.deflection??'',t.baseline,t.bent,t.released??'',k==='dual'?'ratio':'mV',M.voltageDrop(t.bent,t.baseline),t.strain??'',t.note]));const csv=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\r\n');const a=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=url;a.download='SmartHull-recorded-trials.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
  window.addEventListener('resize',update);update();
 }
-
 
 

@@ -6,3 +6,22 @@
 .workspace>*{min-width:0}.experiment-page .readouts article{min-width:0;overflow-wrap:anywhere}.legend{gap:10px 18px}.legend span{display:inline-flex;align-items:center;gap:5px}.intro .text-link{flex-shrink:0}
 .experiment-page .readouts article{display:block}.experiment-page .readouts article>span,.experiment-page .readouts article>strong,.experiment-page .readouts article>small{display:block;width:100%}.experiment-page .readouts strong{overflow-wrap:normal}@media(max-width:400px){.experiment-page .readouts{grid-template-columns:1fr}.plot-panel canvas{min-width:430px}.plot-panel{overflow-x:auto}}
 
+/* Persistent, accessible simulation theme. */
+#themeToggle{white-space:nowrap;min-width:94px}
+:root[data-theme=dark]{color-scheme:dark;--bg:#0d1820;--paper:#172630;--ink:#e0edf2;--muted:#adc1cb;--line:#344954;--blue:#79c4d8;--orange:#e9b56d}
+[data-theme=dark] header,[data-theme=dark] .readouts article{background:var(--paper)}
+[data-theme=dark] button,[data-theme=dark] select,[data-theme=dark] input{background:#20343f;border-color:#506874;color:var(--ink)}
+[data-theme=dark] button:hover{background:#304c5a}
+[data-theme=dark] .scene-wrap{background:#101f29}
+[data-theme=dark] .view-buttons button{background:#20343ff2}
+[data-theme=dark] .badge,[data-theme=dark] .table-wrap tr.selected{background:#29434f;color:#c5e5ef}
+[data-theme=dark] .data-banner{background:#1c3935;color:#b9e0d4}
+[data-theme=dark] .data-banner.model-mode{background:#3b3223;color:#efd2a0}
+[data-theme=dark] .mode-tabs [aria-pressed=true],[data-theme=dark] .phase-controls [aria-pressed=true],[data-theme=dark] button.primary{background:#316378;color:#fff;border-color:#79aebe}
+[data-theme=dark] .controls label,[data-theme=dark] .trial-note,[data-theme=dark] .setup dt,[data-theme=dark] .scope-line,[data-theme=dark] .scene-caption,[data-theme=dark] .science p,[data-theme=dark] .outlook-panel>p{color:var(--muted)}
+[data-theme=dark] .narration{color:#badce8}
+[data-theme=dark] .outlook-panel{background:#1a2d38}
+[data-theme=dark] .setup dl div,[data-theme=dark] .table-wrap th,[data-theme=dark] .table-wrap td{border-color:var(--line)}
+[data-theme=dark] .legend span[style]{color:#e3b081!important}
+[data-theme=dark] .legend i[style*="315f70"]{background:#79c4d8!important}
+[data-theme=dark] .legend i[style*="aa7138"]{border-color:#e9b56d!important}
