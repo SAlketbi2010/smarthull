@@ -1,36 +1,32 @@
-# SmartHull AI Fiber Monitoring
+# SmartHull experimental visualization
 
-A static student research website with a project overview, an interactive three-point bending simulation, and team contacts.
+Static website updated to the 20 October 2026 Phase 1 report. Open `index.html` or serve this directory with any static server; there are no external JavaScript dependencies.
 
-## Run locally
+## Experiences
 
-Download or clone this repository and open `index.html` in a browser. Keep all files in the same folder. No installation, build step, or external dependencies are required.
+- Replay unloaded, bent and released summaries from five separate-channel plate trials, four historical single-channel plate trials and three direct-fiber bends.
+- Explore the all-trial and supplementary filtered deflection fits across the sampled 10–30 mm range.
+- Inspect complete result tables, conditional large-deflection strain estimates, graph legends, and the experimental report.
+- Download the reference-channel JSON dataset or export all trial summaries as CSV.
+- View a future hull concept, explicitly separate from measured bench results.
 
-## Pages
+## Quantities and hardware
 
-- `index.html`: project overview and research plan
-- `simulation.html`: simplified demonstration with optional scientific controls
-- `contact.html`: team roles and school email contacts
-- `style.css`: responsive shared styles
-- `app.js`: 3D apparatus rendering, numerical simulation, data export and regression analysis
+The current separate-channel configuration uses sensing C1 → ESP32 D35, reference C1 → D34, common D25 → both TX, 3.3 V and common GND. Historical single-channel results used D34 and are not pooled into the ratio fit. R is the median of sample-wise sensing/reference voltage ratios; q = 100(1 − R/R₀). These are normalized receiver-voltage decreases, not calibrated optical-power losses.
 
-## Simulation features
+Polycarbonate: 297 × 210 × 2 mm; approximate support span 228.6 mm; initial centre height 60 mm. Strain is a conditional smooth-support central-point-load beam calculation, not an independent measurement of plate or fiber strain.
 
-- Adjustable load, beam geometry and optical assumptions
-- Three-dimensional rotatable test rig
-- Demonstration strain warnings
-- Repeated loading and unloading cycles
-- Synthetic data tables, plots and CSV export
-- Linear or quadratic regression with a complete held-out test cycle
+| Fit | n | q (%) against δ (mm) | R² | RMSE (percentage points) |
+| --- | --- | --- | --- | --- |
+| All trials | 5 | 0.1144663δ + 0.0323504 | 0.763957 | 0.476137 |
+| Supplementary filtered | 3 | 0.0875926δ + 0.5714792 | 0.790787 | 0.367863 |
 
-## Scientific scope
+Filtering omits 20 mm Trial 1 (movement reported) and 30 mm Trial 2 (possible table shaking reported), evaluated after inspecting results. Both observations remain visible and in the primary fit. Metrics are in-sample fitting errors; no held-out prediction accuracy is established.
 
-All generated observations are synthetic. The mechanical model assumes a flat, simply supported beam under a central point load. Optical response parameters and demonstration warning thresholds are assumed, not validated sensor specifications or hull-damage limits. The website is not connected to physical hardware.
+`model.js` holds the documented historical summaries, current trial ratios, fits and numerical elastica solver. `data/experimental-results.json` holds the current ratio dataset and fit metadata. `SmartHull-Experimental-Summary.pdf` is the complete six-page report. The interface is a replay of summaries and a separate calculated approximation, without fabricated live signals or a trained AI model. TinyML and marine validation are Phase 2 / future work.
 
-## Team
+## Numerical references
 
-Applied Technology Schools — Abu Dhabi — Boys
+- Ohtsuki (1986), https://doi.org/10.1299/jsme1958.29.1988
+- Batista (2014), https://arxiv.org/pdf/1408.3094
 
-- Saeed Hamad Sultan Hamad Alketbi — Team leader & engineer
-- Rashed Rahmah Rashed Rahmah Alhantoobi — Software developer
-- Hazza Ali Jafar Albani Alblooshi — Researcher

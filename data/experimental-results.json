@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-20",
+  "dual_channel_trials": [
+    {
+      "id": "dual10",
+      "label": "10 mm - Trial 1",
+      "deflection": 10,
+      "baseline": 0.7998662870398526,
+      "bent": 0.7903695819893848,
+      "released": 0.8003618256368256,
+      "note": "Released ratio returned 0.06% above baseline.",
+      "flag": false,
+      "strain": 2277.616428955587,
+      "drop": 1.187286575811719,
+      "unit": "ratio",
+      "height": 50
+    },
+    {
+      "id": "dual20a",
+      "label": "20 mm - Trial 1",
+      "deflection": 20,
+      "baseline": 0.7812250191103239,
+      "bent": 0.7673251599112174,
+      "released": 0.7870225759511436,
+      "note": "Movement reported. Retained in the full dataset; omitted from the supplementary filtered fit.",
+      "flag": true,
+      "strain": 4446.562974189687,
+      "drop": 1.7792388696071137,
+      "unit": "ratio",
+      "height": 40
+    },
+    {
+      "id": "dual20b",
+      "label": "20 mm - Trial 2",
+      "deflection": 20,
+      "baseline": 0.7896658388492364,
+      "bent": 0.767211157660096,
+      "released": 0.7873929205681571,
+      "note": "Repeated 20 mm cycle; released ratio returned 0.29% below baseline.",
+      "flag": false,
+      "strain": 4446.562974189687,
+      "drop": 2.8435675046882047,
+      "unit": "ratio",
+      "height": 40
+    },
+    {
+      "id": "dual30a",
+      "label": "30 mm - Trial 1",
+      "deflection": 30,
+      "baseline": 0.7895381000141715,
+      "bent": 0.7663324850800879,
+      "released": 0.7827812761406763,
+      "note": "Reference voltage changed +0.03% during bending; sensing voltage decreased 2.89%.",
+      "flag": false,
+      "strain": 6414.225579830796,
+      "drop": 2.93913807752495,
+      "unit": "ratio",
+      "height": 30
+    },
+    {
+      "id": "dual30b",
+      "label": "30 mm - Trial 2",
+      "deflection": 30,
+      "baseline": 0.7866787165279692,
+      "bent": 0.7551815646486906,
+      "released": 0.7972990956836485,
+      "note": "Possible table shaking reported. Planned 40 mm was corrected to actual 30 mm. Later recovery check shown. Omitted only from the filtered fit.",
+      "flag": true,
+      "strain": 6414.225579830796,
+      "drop": 4.003813909990117,
+      "unit": "ratio",
+      "height": 30
+    }
+  ],
+  "all_trial_fit": {
+    "slope": 0.11446630086353313,
+    "intercept": 0.03235036852669193,
+    "r_squared_descriptive": 0.7639573431283447,
+    "n": 5
+  },
+  "filtered_fit": {
+    "slope": 0.08759257508566154,
+    "intercept": 0.5714792176283936,
+    "r_squared": 0.7907871355723601,
+    "rmse_percentage_points": 0.36786295874125713,
+    "n": 3
+  },
+  "all_trial_rmse_percentage_points": 0.4761374635504381,
+  "quantity": "Normalized receiver-voltage decrease; not calibrated optical power",
+  "geometry": {
+    "length_mm": 297,
+    "width_mm": 210,
+    "thickness_mm": 2,
+    "support_span_mm": 228.6,
+    "unloaded_height_mm": 60
+  }
+}
