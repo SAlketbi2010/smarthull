@@ -27,7 +27,7 @@ if(typeof document!=='undefined'){
   const f=fresh(),connected=!!port&&!closing;
   $('connection').textContent=busy?'CONNECTING':closing?'DISCONNECTING':!connected?'DISCONNECTED':f?'RECEIVING':'WAITING FOR DATA';
   $('connect').disabled=busy||!!port||closing||!('serial' in navigator);$('disconnect').disabled=!port||closing;
-  $('enable').disabled=$('disable').disabled=!f||writing;
+  $('enable').disabled=$('disable').disabled=!connected||!port.writable||writing;
   $('baseline').disabled=!f||!last.valid||!!capture||writing;$('clear').disabled=baseline===null&&!capture;$('download').disabled=!rows.length;
   $('sense').textContent=f?last.sense.toFixed(2):'—';$('reference').textContent=f?last.reference.toFixed(2):'—';
   $('ratio').textContent=f&&last.valid?last.ratio.toFixed(6):'—';const q=f&&last.valid?LiveData.decrease(last.ratio,baseline):null;
@@ -54,16 +54,16 @@ if(typeof document!=='undefined'){
   const lines=new LiveData.Lines(),decoder=new TextDecoder();
   try{reader=active.readable.getReader();while(!closing){const {value,done}=await reader.read();if(done)break;for(const row of lines.push(decoder.decode(value,{stream:true})))accept(row);}}
   catch(e){if(!closing)message('USB reading stopped. Reconnect the ESP32. '+e.message,true);}
-  finally{if(reader)reader.releaseLock();reader=null;while(writing)await new Promise(r=>setTimeout(r,20));try{await active.close();}catch(e){}if(port===active)port=null;closing=false;resetBaseline('Disconnected. Reconnect and capture a new baseline.');if(!$('status').dataset.error||$('status').dataset.error==='false')message('Disconnected — recorded session remains available for CSV export.');render();}
+  finally{if(reader)reader.releaseLock();reader=null;while(writing)await new Promise(r=>setTimeout(r,20));try{await active.close();}catch(e){}if(port===active)port=null;closing=false;resetBaseline('Disconnected. Reconnect and capture a new baseline.');message('Disconnected — recorded session remains available for CSV export.');render();}
  }
  $('connect').onclick=async()=>{
   busy=true;render();let selected;
-  try{selected=await navigator.serial.requestPort();await selected.open({baudRate:115200});port=selected;last=null;rows=[];sessionStart=new Date().toISOString();resetBaseline();message('Port connected. Waiting for firmware readings…');task=readLoop(selected);}
+  try{selected=await navigator.serial.requestPort();await selected.open({baudRate:115200});port=selected;last=null;if(!sessionStart)sessionStart=new Date().toISOString();resetBaseline();message('Port connected. Waiting for firmware readings…');task=readLoop(selected);}
   catch(e){message(e.name==='NotFoundError'?'Connection cancelled. Select your ESP32 when ready.':'Could not open the port. Close VS Code Serial Monitor and other serial readers, then retry. '+e.message,true);}
   finally{busy=false;render();}
  };
  $('disconnect').onclick=async()=>{closing=true;render();if(reader)await reader.cancel().catch(()=>{});if(task)await task;message('Disconnected — recorded session remains available for CSV export.');};
- async function command(char){if(!fresh()||writing)return;writing=true;resetBaseline('Drive command sent. Wait for valid readings, then capture a new baseline.');render();let writer;
+ async function command(char){if(!port||closing||!port.writable||writing)return;writing=true;resetBaseline('Drive command sent. Wait for valid readings, then capture a new baseline.');render();let writer;
   try{writer=port.writable.getWriter();await writer.write(new TextEncoder().encode(char));}
   catch(e){message('Could not send drive command: '+e.message,true);}
   finally{if(writer)writer.releaseLock();writing=false;render();}
