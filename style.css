@@ -14,7 +14,7 @@ nav a[aria-current=page]{font-weight:650;border-bottom:2px solid #315f70;padding
 #themeToggle{font-size:12px}
 main,.content-page,.experiment-page{max-width:1500px;padding:0 4%}
 .video-hero .hero-copy{max-width:850px}
-.hero-video{width:min(100%,calc(64vh*16/9))}
+.hero-video{width:min(100%,calc(64vh*16/9));margin-left:auto;margin-right:auto}
 [data-theme=dark] header{background:var(--paper)}
 [data-theme=dark] button,[data-theme=dark] select,[data-theme=dark] input{background:#20343f;border-color:#506874;color:var(--ink)}
 [data-theme=dark] button:hover{background:#304c5a}
