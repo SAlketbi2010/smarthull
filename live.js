@@ -17,7 +17,16 @@ const LiveData = (() => {
  // Learned strain estimator: through-origin regression of calculated strain on the receiver decrease (fixed-stop presses, 8.5-28.5 mm).
  const MODEL={slope:1917.3,range:[0,6500],looError:380};
  const strainFromDecrease=q=>Number.isFinite(q)?Math.max(0,MODEL.slope*q):null;
- const LEVELS={yellow:3500,red:5500};
+ // Warning levels come from published limits, not from a user setting.
+ // Hull side: glass/polyester hull laminates start to micro-crack at about 0.2% strain (SP Systems, Guide to Composites);
+ // BS 4994:1987 caps the allowable strain of reinforced-plastic structures at min(0.1*eps_R, 0.2%). Limit = 2,000 ue.
+ // Strain is a geometric ratio, so the same 2,000 ue can be produced in the polycarbonate test plate: eps = 6*t*delta/L^2.
+ const HULL={limit:2000,approachFraction:0.8};
+ const PLATE={t:2,span:228.6,E:2300,yieldStress:60,yieldStrain:0.06};//mm, mm, MPa (flexural), MPa, strain at yield (ISO 527 data sheet)
+ const LEVELS={yellow:HULL.limit*HULL.approachFraction,red:HULL.limit};
+ const deflectionFor=strain=>strain*1e-6*PLATE.span*PLATE.span/(6*PLATE.t);//mm, small-deflection three-point bending
+ const plateStress=strain=>PLATE.E*strain*1e-6;//MPa, sigma = E*eps
+ const plateYieldShare=strain=>strain*1e-6/PLATE.yieldStrain;
  function level(strain,yellow=LEVELS.yellow,red=LEVELS.red){
   if(!Number.isFinite(strain))return null;
   if(strain>=red)return 'danger';if(strain>=yellow)return 'approaching';return 'safe';
@@ -41,12 +50,12 @@ const LiveData = (() => {
   const q=decrease(stableMedian,baseline);if(q===null||Math.abs(q)>maxQ)return baseline;
   return baseline+(stableMedian-baseline)*Math.min(1,dtMs/60000);
  }
- return {parse,median,decrease,Lines,MODEL,strainFromDecrease,LEVELS,level,Tracker,trackDrift};
+ return {parse,median,decrease,Lines,MODEL,strainFromDecrease,HULL,PLATE,LEVELS,deflectionFor,plateStress,plateYieldShare,level,Tracker,trackDrift};
 })();
 if(typeof module!=='undefined')module.exports=LiveData;
 if(typeof document!=='undefined'){
  const $=id=>document.getElementById(id);
- const tracker=new LiveData.Tracker();let autoOn=true,baseline0=null,lastTrack=null,autoCapture=false,yellowAt=LiveData.LEVELS.yellow,redAt=LiveData.LEVELS.red;
+ const tracker=new LiveData.Tracker();let autoOn=true,baseline0=null,lastTrack=null,autoCapture=false;const yellowAt=LiveData.LEVELS.yellow,redAt=LiveData.LEVELS.red;
  let port=null,reader=null,task=null,busy=false,closing=false,writing=false,last=null,rows=[],baseline=null,capture=null,drawPending=false,sessionStart=null;
  const fresh=()=>!!last&&!!port&&!closing&&Date.now()-last.at<2000;
  function message(s,error=false){$('status').textContent=s;$('status').dataset.error=error;}
@@ -61,6 +70,7 @@ if(typeof document!=='undefined'){
   $('gaugeBar').style.background=`linear-gradient(90deg,var(--ok) 0 ${yellowAt/max*100}%,var(--warn) ${yellowAt/max*100}% ${redAt/max*100}%,var(--bad) ${redAt/max*100}% 100%)`;
   $('yLabel').textContent=yellowAt.toLocaleString();$('rLabel').textContent=redAt.toLocaleString();
   let note='Estimated by the learned model from the decrease. Typical error ±'+LiveData.MODEL.looError+' µε inside the calibrated 0–'+max.toLocaleString()+' µε range.';
+  if(est!==null)note='That is '+Math.round(est/LiveData.HULL.limit*100)+'% of the '+LiveData.HULL.limit.toLocaleString()+' µε hull limit. The polycarbonate plate itself carries about '+LiveData.plateStress(est).toFixed(1)+' MPa, '+(LiveData.plateYieldShare(est)*100).toFixed(0)+'% of its yield strain. '+note;
   if(est!==null&&est>max)note='Above the calibrated range (>'+max.toLocaleString()+' µε): the true strain may be higher than shown.';
   else if(q!==null&&q<-0.5)note='Reading is above the baseline. If the plate is unloaded, re-capture the baseline.';
   else if(baseline===null)note='Capture or auto-learn an unloaded baseline to see an estimate.';
@@ -127,8 +137,6 @@ if(typeof document!=='undefined'){
  $('enable').onclick=()=>command('l');$('disable').onclick=()=>command('d');
  $('baseline').onclick=()=>{if(!fresh()||!last.valid)return;baseline=null;capture={start:Date.now(),lastAt:Date.now(),drive:last.drive,values:[]};$('baselineInfo').textContent='Capturing unloaded baseline… keep still for twenty seconds.';render();};
  $('auto').onchange=()=>{autoOn=$('auto').checked;tracker.reset();if(!autoOn&&!capture)$('baselineInfo').textContent=baseline===null?'Auto-baseline is off. Use the capture button when the plate is unloaded.':$('baselineInfo').textContent;render();};
- const limit=()=>{const y=Number($('yellowAt').value),r=Number($('redAt').value);if(y>0&&r>y){yellowAt=y;redAt=r;$('limitError').textContent='';}else $('limitError').textContent='Approaching must be above 0 and below Danger.';render();};
- $('yellowAt').onchange=$('redAt').onchange=limit;
  $('clear').onclick=()=>{resetBaseline();render();};
  $('download').onclick=()=>{const header=['received_utc','device_ms','drive','sensing_D35_mV','reference_D34_mV','ratio','baseline_ratio','decrease_pct','status','strain_estimate_ue','level'];const data=rows.map(r=>{const e=LiveData.strainFromDecrease(r.decrease);return [r.utc,r.ms,r.drive,r.sense,r.reference,r.ratio??'',r.baseline??'',r.decrease??'',r.status,e===null?'':e.toFixed(0),e===null?'':LiveData.level(e,yellowAt,redAt)];});const csv=[header,...data].map(r=>r.join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='SmartHull-live-'+(sessionStart||new Date().toISOString()).replaceAll(':','-')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  function plot(){

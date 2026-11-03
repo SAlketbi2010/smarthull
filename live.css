@@ -16,3 +16,5 @@
 .gauge-scale{display:flex;justify-content:space-between;font-size:.8rem;margin-top:8px;opacity:.85}
 .strain-controls{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;margin-top:14px}.strain-controls input[type=number]{width:96px;padding:6px 8px;font:inherit}.strain-controls .check{flex:1 1 100%}
 @media (max-width:640px){.strain-main strong{font-size:2rem}}
+
+.limits{margin-top:10px;font-size:.92rem}.limits summary{cursor:pointer;font-weight:600}.limits ol{padding-left:1.2em;margin:.6em 0}.limits li{margin:.5em 0}
