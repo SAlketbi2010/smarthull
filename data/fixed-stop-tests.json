@@ -1,0 +1,56 @@
+{
+ "title": "SmartHull fixed-stop repeat tests",
+ "date": "2026-11-03",
+ "setup": "2 mm polycarbonate plate, span 228.6 mm, central load against fixed stops, dark room, drive 132/255 on D25, sensing D35 / reference D34",
+ "decrease_pct_per_press": {
+  "8.5 mm (3 plates)": [
+   1.0,
+   0.78,
+   0.87,
+   0.99,
+   1.0
+  ],
+  "18.5 mm (2 plates)": [
+   2.45,
+   2.37
+  ],
+  "28.5 mm (1 plate)": [
+   3.02,
+   3.09
+  ]
+ },
+ "calculated_strain_ue": {
+  "8.5": 1940,
+  "18.5": 4132,
+  "28.5": 6135
+ },
+ "fit_9_presses": {
+  "slope_pp_per_mm": 0.111,
+  "slope_se": 0.009,
+  "R2": 0.96,
+  "RMSE_pp": 0.18
+ },
+ "linear_calibration": {
+  "strain_ue_per_percent_decrease": 1917.3,
+  "leave_one_out_error_ue": 380,
+  "calibrated_range_ue": [
+   0,
+   6500
+  ]
+ },
+ "drift_quiet_minutes": {
+  "windows": 43,
+  "median_abs_drift_pct_per_min": {
+   "sensing_D35": 0.093,
+   "reference_D34": 0.059,
+   "ratio": 0.055
+  },
+  "ratio_lower_than_sensing_in": "77% of windows"
+ },
+ "excluded": "The unreliable third press at the 18.5 mm and 28.5 mm stops was excluded, as reported by the operator.",
+ "limits": [
+  "Only 2 presses at 18.5 and 28.5 mm",
+  "No stop below about 1,940 ue",
+  "Strain is calculated from deflection, not measured with a strain gauge"
+ ]
+}

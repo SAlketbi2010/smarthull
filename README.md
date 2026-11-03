@@ -34,3 +34,4 @@ Filtering omits 20 mm Trial 1 (movement reported) and 30 mm Trial 2 (possible ta
 
 One continuous sensing fiber crosses the specimen, turns around and returns in a second pass. The reference loop is separate. The 3D view shows the two-pass topology, a wooden base and metal supports based on prototype photographs. Pass spacing, turn radius and attachment are illustrative, not measured. No factor-of-two correction is applied to measured response or strain.
 
+Fixed-stop repeat tests (3 November 2026) are in `data/fixed-stop-tests.json`. The live page estimates strain with a linear calibration and shows a green/amber/red warning against an example 0.2% hull-laminate limit.
