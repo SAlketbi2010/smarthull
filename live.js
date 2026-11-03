@@ -43,8 +43,8 @@ if(typeof document!=='undefined'){
   if(capture){
    if(!r.valid||r.drive!==capture.drive||r.at-capture.lastAt>1500){resetBaseline('Baseline capture interrupted. Wait for valid, steady readings and try again.');}
    else{capture.values.push(r.ratio);capture.lastAt=r.at;const elapsed=r.at-capture.start;
-    if(elapsed>=5000){if(capture.values.length>=30){baseline=LiveData.median(capture.values);$('baselineInfo').textContent=`Unloaded baseline R₀ = ${baseline.toFixed(6)} · median of ${capture.values.length} samples · captured ${new Date().toLocaleTimeString()}`;capture=null;}else resetBaseline('Too few samples for a baseline. Try again.');}
-    else $('baselineInfo').textContent=`Capturing unloaded baseline… ${Math.ceil((5000-elapsed)/1000)} s remaining. Keep still.`;
+    if(elapsed>=20000){if(capture.values.length>=120){baseline=LiveData.median(capture.values);$('baselineInfo').textContent=`Unloaded baseline R₀ = ${baseline.toFixed(6)} · median of ${capture.values.length} samples · captured ${new Date().toLocaleTimeString()}`;capture=null;}else resetBaseline('Too few samples for a baseline. Try again.');}
+    else $('baselineInfo').textContent=`Capturing unloaded baseline… ${Math.ceil((20000-elapsed)/1000)} s remaining. Keep still.`;
    }
   }
   r.baseline=baseline;r.decrease=LiveData.decrease(r.ratio,baseline);rows.push(r);if(rows.length>36000)rows.shift();last=r;
@@ -69,7 +69,7 @@ if(typeof document!=='undefined'){
   finally{if(writer)writer.releaseLock();writing=false;render();}
  }
  $('enable').onclick=()=>command('l');$('disable').onclick=()=>command('d');
- $('baseline').onclick=()=>{if(!fresh()||!last.valid)return;baseline=null;capture={start:Date.now(),lastAt:Date.now(),drive:last.drive,values:[]};$('baselineInfo').textContent='Capturing unloaded baseline… keep still for five seconds.';render();};
+ $('baseline').onclick=()=>{if(!fresh()||!last.valid)return;baseline=null;capture={start:Date.now(),lastAt:Date.now(),drive:last.drive,values:[]};$('baselineInfo').textContent='Capturing unloaded baseline… keep still for twenty seconds.';render();};
  $('clear').onclick=()=>{resetBaseline();render();};
  $('download').onclick=()=>{const header=['received_utc','device_ms','drive','sensing_D35_mV','reference_D34_mV','ratio','baseline_ratio','decrease_pct','status'];const data=rows.map(r=>[r.utc,r.ms,r.drive,r.sense,r.reference,r.ratio??'',r.baseline??'',r.decrease??'',r.status]);const csv=[header,...data].map(r=>r.join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='SmartHull-live-'+(sessionStart||new Date().toISOString()).replaceAll(':','-')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  function plot(){
