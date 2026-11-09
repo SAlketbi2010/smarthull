@@ -52,5 +52,25 @@
   "Only 2 presses at 18.5 and 28.5 mm",
   "No stop below about 1,940 ue",
   "Strain is calculated from deflection, not measured with a strain gauge"
- ]
+ ],
+ "phase": "Phase 2",
+ "lack_of_fit": {
+  "F": 34.5,
+  "df": [
+   1,
+   6
+  ],
+  "p": 0.001,
+  "pure_error_sd_pp": 0.087,
+  "mean_minus_line_pp": {
+   "8.5": -0.06,
+   "18.5": 0.31,
+   "28.5": -0.15
+  }
+ },
+ "drift_pct_per_min": {
+  "sensing": 0.093,
+  "reference": 0.059,
+  "ratio": 0.055
+ }
 }
