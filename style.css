@@ -25,3 +25,5 @@ main,.content-page,.experiment-page{max-width:1500px;padding:0 4%}
 [data-theme=dark] .research-question{background:#1a2d38;border-color:#79aeb8}
 [data-theme=dark] .contact-card{background:var(--paper);border-color:var(--line)}
 @media(max-width:750px){header{flex-wrap:wrap;gap:10px}header nav{order:3;width:100%;gap:22px}}
+
+.brand{display:inline-flex;align-items:center;gap:10px}.brand .logo{height:30px;width:auto;flex:none}.brand b{font-weight:inherit}@media(max-width:640px){.brand .logo{height:26px}}

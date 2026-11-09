@@ -140,11 +140,30 @@ if(typeof document!=='undefined'){
  $('clear').onclick=()=>{resetBaseline();render();};
  $('download').onclick=()=>{const header=['received_utc','device_ms','drive','sensing_D35_mV','reference_D34_mV','ratio','baseline_ratio','decrease_pct','status','strain_estimate_ue','level'];const data=rows.map(r=>{const e=LiveData.strainFromDecrease(r.decrease);return [r.utc,r.ms,r.drive,r.sense,r.reference,r.ratio??'',r.baseline??'',r.decrease??'',r.status,e===null?'':e.toFixed(0),e===null?'':LiveData.level(e,yellowAt,redAt)];});const csv=[header,...data].map(r=>r.join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='SmartHull-live-'+(sessionStart||new Date().toISOString()).replaceAll(':','-')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
  function plot(){
-  const canvas=$('livePlot'),c=canvas.getContext('2d'),w=canvas.clientWidth,h=300,dpr=window.devicePixelRatio||1;if(!w)return;canvas.width=w*dpr;canvas.height=h*dpr;c.setTransform(dpr,0,0,dpr,0,0);
-  const dark=document.documentElement.dataset.theme==='dark',text=dark?'#bcd0da':'#526977',grid=dark?'#344954':'#dce5e9';const now=Date.now(),data=rows.filter(r=>now-r.at<=60000),left=55,right=20,top=20,bottom=38,X=t=>left+(t-(now-60000))/60000*(w-left-right),Y=v=>h-bottom-v/3300*(h-top-bottom);
-  c.font='11px system-ui';c.fillStyle=text;c.textAlign='right';for(const v of [0,1000,2000,3000]){c.strokeStyle=grid;c.beginPath();c.moveTo(left,Y(v));c.lineTo(w-right,Y(v));c.stroke();c.fillText(v,left-8,Y(v)+4);}
-  c.textAlign='center';for(const t of [-60,-40,-20,0])c.fillText(t+' s',X(now+t*1000),h-14);c.textAlign='left';c.fillText('mV',10,15);
-  for(const [key,color] of [['sense','#30a4bb'],['reference','#de9b46']]){c.strokeStyle=color;c.lineWidth=2;c.beginPath();let prev=null;for(const r of data){if(!prev||r.at-prev.at>1500||r.ms<prev.ms)c.moveTo(X(r.at),Y(r[key]));else c.lineTo(X(r.at),Y(r[key]));prev=r;}c.stroke();}
+  const canvas=$('livePlot'),c=canvas.getContext('2d'),w=canvas.clientWidth,h=canvas.clientHeight||360,dpr=window.devicePixelRatio||1;if(!w)return;canvas.width=w*dpr;canvas.height=h*dpr;c.setTransform(dpr,0,0,dpr,0,0);
+  const dark=document.documentElement.dataset.theme==='dark',text=dark?'#bcd0da':'#526977',grid=dark?'#344954':'#dce5e9',zero=dark?'#7f98a6':'#8aa0ac';
+  const now=Date.now(),data=rows.filter(r=>now-r.at<=60000),left=62,right=20,X=t=>left+(t-(now-60000))/60000*(w-left-right);
+  const med=a=>{const s=a.filter(Number.isFinite).sort((p,q)=>p-q);return s.length?s[s.length>>1]:null;};
+  const mS=med(data.map(r=>r.sense)),mR=med(data.map(r=>r.reference));
+  // Each panel is auto-zoomed to what is on screen, so small changes fill the height instead of sitting on a 0-3300 mV axis.
+  const panels=[
+   {top:24,bot:Math.round(h*.52),title:'Change from the 60 s median (%)',sym:true,minSpan:.4,dec:2,series:[['#30a4bb',r=>mS?100*(r.sense/mS-1):null],['#de9b46',r=>mR?100*(r.reference/mR-1):null]]},
+   {top:Math.round(h*.52)+34,bot:h-30,title:'Ratio decrease q (%) — sensing/reference',sym:false,minSpan:1,dec:2,series:[['#c55a11',r=>r.decrease]]}
+  ];
+  c.font='11px system-ui';
+  for(const p of panels){
+   let lo=Infinity,hi=-Infinity;for(const [,f] of p.series)for(const r of data){const v=f(r);if(Number.isFinite(v)){if(v<lo)lo=v;if(v>hi)hi=v;}}
+   if(!Number.isFinite(lo)){lo=-p.minSpan/2;hi=p.minSpan/2;}
+   if(p.sym){const m=Math.max(Math.abs(lo),Math.abs(hi),p.minSpan/2)*1.15;lo=-m;hi=m;}else{lo=Math.min(lo,0);hi=Math.max(hi,0);const pad=Math.max(hi-lo,p.minSpan)*.12;if(hi-lo<p.minSpan){const mid=(hi+lo)/2;lo=Math.min(lo,mid-p.minSpan/2);hi=Math.max(hi,mid+p.minSpan/2);}lo-=pad;hi+=pad;}
+   const Y=v=>p.bot-(v-lo)/(hi-lo)*(p.bot-p.top);
+   c.fillStyle=text;c.textAlign='left';c.fillText(p.title,left,p.top-9);
+   c.textAlign='right';for(let k=0;k<=4;k++){const v=lo+(hi-lo)*k/4;c.strokeStyle=grid;c.lineWidth=1;c.beginPath();c.moveTo(left,Y(v));c.lineTo(w-right,Y(v));c.stroke();c.fillStyle=text;c.fillText(v.toFixed(p.dec),left-8,Y(v)+4);}
+   if(lo<0&&hi>0){c.strokeStyle=zero;c.lineWidth=1.4;c.beginPath();c.moveTo(left,Y(0));c.lineTo(w-right,Y(0));c.stroke();}
+   c.save();c.beginPath();c.rect(left,p.top-2,w-left-right,p.bot-p.top+4);c.clip();
+   for(const [color,f] of p.series){c.strokeStyle=color;c.lineWidth=2;c.beginPath();let prev=null;for(const r of data){const v=f(r);if(!Number.isFinite(v)){prev=null;continue;}if(!prev||r.at-prev.at>1500||r.ms<prev.ms)c.moveTo(X(r.at),Y(v));else c.lineTo(X(r.at),Y(v));prev=r;}c.stroke();}
+   c.restore();
+  }
+  c.fillStyle=text;c.textAlign='center';for(const t of [-60,-40,-20,0])c.fillText(t+' s',X(now+t*1000),h-10);
   if(!data.length){c.textAlign='center';c.fillText('No recent hardware readings',w/2,h/2);}
  }
  const theme=()=>{const dark=document.documentElement.dataset.theme==='dark';$('themeToggle').textContent=dark?'Light mode':'Dark mode';$('themeToggle').setAttribute('aria-pressed',String(dark));};theme();
