@@ -7,11 +7,11 @@
 [data-theme=dark]{--ok:#43b97a;--warn:#f0b83a;--bad:#ea6a5a}
 .strain-panel{padding:0 0 18px;margin:18px 0;box-shadow:inset 0 3px 0 var(--line)}.strain-panel>:not(.panel-top){margin-left:18px;margin-right:18px}.strain-panel>.strain-main{margin-top:18px}.strain-panel>.panel-top{margin:0}
 .strain-panel[data-level=safe]{box-shadow:inset 0 4px 0 var(--ok)}.strain-panel[data-level=approaching]{box-shadow:inset 0 4px 0 var(--warn)}.strain-panel[data-level=danger]{box-shadow:inset 0 4px 0 var(--bad)}
-.level-chip{display:inline-block;padding:6px 14px;border-radius:999px;font-weight:700;font-size:.85rem;letter-spacing:.04em;background:#e8eef1;color:#35505d}
+.level-chip{display:inline-block;padding:6px 14px;border-radius:2px;font-weight:700;font-size:.85rem;letter-spacing:.04em;background:#e8eef1;color:#35505d}
 [data-theme=dark] .level-chip{background:#27404c;color:#d3e3ea}
 [data-level=safe] .level-chip{background:var(--ok);color:#fff}[data-level=approaching] .level-chip{background:var(--warn);color:#2a1d00}[data-level=danger] .level-chip{background:var(--bad);color:#fff}
 .strain-main{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;margin:8px 0 14px}.strain-main strong{font-size:2.4rem;line-height:1.1}.strain-main small{flex:1 1 260px}
-.gauge-bar{position:relative;height:16px;border-radius:8px;margin-top:6px}.gauge-bar i{position:absolute;top:-6px;width:4px;height:28px;margin-left:-2px;background:#12202a;border:2px solid #fff;border-radius:3px;box-shadow:0 0 0 1px #12202a}
+.gauge-bar{position:relative;height:16px;border-radius:0;margin-top:6px}.gauge-bar i{position:absolute;top:-6px;width:4px;height:28px;margin-left:-2px;background:#12202a;border:2px solid #fff;border-radius:0;box-shadow:0 0 0 1px #12202a}
 [data-theme=dark] .gauge-bar i{background:#fff;border-color:#12202a;box-shadow:0 0 0 1px #fff}
 .gauge-scale{display:flex;justify-content:space-between;font-size:.8rem;margin-top:8px;opacity:.85}
 .strain-controls{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;margin-top:14px}.strain-controls input[type=number]{width:96px;padding:6px 8px;font:inherit}.strain-controls .check{flex:1 1 100%}
