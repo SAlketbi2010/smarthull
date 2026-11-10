@@ -60,8 +60,12 @@ if(typeof document!=='undefined'){
  const fresh=()=>!!last&&!!port&&!closing&&Date.now()-last.at<2000;
  function message(s,error=false){$('status').textContent=s;$('status').dataset.error=error;}
  function resetBaseline(reason){baseline=null;baseline0=null;lastTrack=null;autoCapture=false;tracker.reset();capture=null;$('baselineInfo').textContent=reason||'No baseline captured. Keep the plate unloaded and still during capture.';}
+ const HOLD_MS=1000;let heldLvl=null,candLvl=null,candAt=0;
  function strainPanel(q){
-  const panel=$('strainPanel'),chip=$('levelChip'),est=LiveData.strainFromDecrease(q),lvl=LiveData.level(est,yellowAt,redAt),max=LiveData.MODEL.range[1];
+  const panel=$('strainPanel'),chip=$('levelChip'),est=LiveData.strainFromDecrease(q),rawLvl=LiveData.level(est,yellowAt,redAt),max=LiveData.MODEL.range[1];
+  // Hold the level: a change is shown only after it has lasted HOLD_MS, so a single noisy reading cannot flash amber or red.
+  const nowT=Date.now();if(rawLvl===null){heldLvl=null;candLvl=null;}else if(heldLvl===null){heldLvl=rawLvl;candLvl=null;}else if(rawLvl===heldLvl){candLvl=null;}else if(rawLvl!==candLvl){candLvl=rawLvl;candAt=nowT;}else if(nowT-candAt>=HOLD_MS){heldLvl=rawLvl;candLvl=null;}
+  const lvl=heldLvl;
   const marks={safe:['SAFE','●'],approaching:['APPROACHING LIMIT','▲'],danger:['DANGER','■']};
   panel.dataset.level=lvl||'none';
   chip.textContent=lvl?marks[lvl][1]+' '+marks[lvl][0]:(baseline===null?'NEEDS BASELINE':'WAITING FOR DATA');
