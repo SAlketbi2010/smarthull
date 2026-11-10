@@ -61,8 +61,18 @@ if(typeof document!=='undefined'){
  function message(s,error=false){$('status').textContent=s;$('status').dataset.error=error;}
  function resetBaseline(reason){baseline=null;baseline0=null;lastTrack=null;autoCapture=false;tracker.reset();capture=null;$('baselineInfo').textContent=reason||'No baseline captured. Keep the plate unloaded and still during capture.';}
  const HOLD_MS=1000;let heldLvl=null,candLvl=null,candAt=0;
- function strainPanel(q){
-  const panel=$('strainPanel'),chip=$('levelChip'),est=LiveData.strainFromDecrease(q),rawLvl=LiveData.level(est,yellowAt,redAt),max=LiveData.MODEL.range[1];
+ // Unloaded readings wobble by about +/-0.5 pp (about +/-1,000 ue). Smooth over 1.5 s and show 0 inside that noise floor, with hysteresis so it does not flicker.
+ const SMOOTH_MS=1500,ZERO_EXIT_PP=0.6,ZERO_ENTER_PP=0.4;let qBuf=[],zeroed=true;
+ function smoothedQ(qRaw){
+  const t=Date.now();if(Number.isFinite(qRaw))qBuf.push([t,qRaw]);qBuf=qBuf.filter(p=>t-p[0]<=SMOOTH_MS);
+  if(!Number.isFinite(qRaw)||!qBuf.length){zeroed=true;return {q:null,zero:false};}
+  const v=qBuf.map(p=>p[1]).sort((a,b)=>a-b),m=Math.floor(v.length/2),qs=v.length%2?v[m]:(v[m-1]+v[m])/2;
+  if(zeroed&&qs>=ZERO_EXIT_PP)zeroed=false;else if(!zeroed&&qs<ZERO_ENTER_PP)zeroed=true;
+  return {q:qs,zero:zeroed};
+ }
+ function strainPanel(qRaw){
+  const sm=smoothedQ(qRaw),q=sm.q;
+  const panel=$('strainPanel'),chip=$('levelChip'),est=q===null?null:(sm.zero?0:LiveData.strainFromDecrease(q)),rawLvl=LiveData.level(est,yellowAt,redAt),max=LiveData.MODEL.range[1];
   // Hold the level: a change is shown only after it has lasted HOLD_MS, so a single noisy reading cannot flash amber or red.
   const nowT=Date.now();if(rawLvl===null){heldLvl=null;candLvl=null;}else if(heldLvl===null){heldLvl=rawLvl;candLvl=null;}else if(rawLvl===heldLvl){candLvl=null;}else if(rawLvl!==candLvl){candLvl=rawLvl;candAt=nowT;}else if(nowT-candAt>=HOLD_MS){heldLvl=rawLvl;candLvl=null;}
   const lvl=heldLvl;
@@ -75,7 +85,8 @@ if(typeof document!=='undefined'){
   $('yLabel').textContent=yellowAt.toLocaleString();$('rLabel').textContent=redAt.toLocaleString();
   let note='Estimated by the learned model from the decrease. Typical error ±'+LiveData.MODEL.looError+' µε inside the calibrated 0–'+max.toLocaleString()+' µε range.';
   if(est!==null)note='That is '+Math.round(est/LiveData.HULL.limit*100)+'% of the '+LiveData.HULL.limit.toLocaleString()+' µε hull limit. The polycarbonate plate itself carries about '+LiveData.plateStress(est).toFixed(1)+' MPa, '+(LiveData.plateYieldShare(est)*100).toFixed(0)+'% of its yield strain. '+note;
-  if(est!==null&&est>max)note='Above the calibrated range (>'+max.toLocaleString()+' µε): the true strain may be higher than shown.';
+  if(est===0&&q!==null&&baseline!==null)note='No load detected. Readings within about ±0.5 percentage points (about ±1,000 µε) are indistinguishable from noise, so they are shown as 0.';
+  else if(est!==null&&est>max)note='Above the calibrated range (>'+max.toLocaleString()+' µε): the true strain may be higher than shown.';
   else if(q!==null&&q<-0.5)note='Reading is above the baseline. If the plate is unloaded, re-capture the baseline.';
   else if(baseline===null)note='Capture or auto-learn an unloaded baseline to see an estimate.';
   $('strainNote').textContent=note;
