@@ -72,8 +72,8 @@ if(typeof document!=='undefined'){
   if(now-winSince>=HOLD_MS){winSince=null;return NAME[winExt];}
   return heldLvl;
  }
- // Unloaded readings wobble by about +/-0.5 pp (about +/-1,000 ue). Smooth over 1.5 s and show 0 inside that noise floor, with hysteresis so it does not flicker.
- const SMOOTH_MS=1500,ZERO_EXIT_PP=0.6,ZERO_ENTER_PP=0.4;let qBuf=[],zeroed=true;
+ // Unloaded readings wobble by about +/-0.5 pp (about +/-1,000 ue). Smooth over 0.5 s and show 0 inside that noise floor, with hysteresis so it does not flicker.
+ const SMOOTH_MS=500,ZERO_EXIT_PP=0.6,ZERO_ENTER_PP=0.4;let qBuf=[],zeroed=true;
  function smoothedQ(qRaw){
   const t=Date.now();if(Number.isFinite(qRaw))qBuf.push([t,qRaw]);qBuf=qBuf.filter(p=>t-p[0]<=SMOOTH_MS);
   if(!Number.isFinite(qRaw)||!qBuf.length){zeroed=true;return {q:null,zero:false};}
