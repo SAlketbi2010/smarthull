@@ -60,7 +60,18 @@ if(typeof document!=='undefined'){
  const fresh=()=>!!last&&!!port&&!closing&&Date.now()-last.at<2000;
  function message(s,error=false){$('status').textContent=s;$('status').dataset.error=error;}
  function resetBaseline(reason){baseline=null;baseline0=null;lastTrack=null;autoCapture=false;tracker.reset();capture=null;$('baselineInfo').textContent=reason||'No baseline captured. Keep the plate unloaded and still during capture.';}
- const HOLD_MS=1000;let heldLvl=null,candLvl=null,candAt=0;
+ const HOLD_MS=1000,RANK={safe:0,approaching:1,danger:2},NAME=['safe','approaching','danger'];let heldLvl=null,winSince=null,winDir=0,winExt=0;
+ // A different level is adopted only if the reading stayed on that side of the held level for HOLD_MS. Rising adopts the lowest level seen in the window and falling the highest, so noise between amber and red cannot reset the timer.
+ function holdLevel(raw,now){
+  if(raw===null){winSince=null;return null;}
+  if(heldLvl===null){winSince=null;return raw;}
+  const r=RANK[raw],h=RANK[heldLvl];
+  if(r===h){winSince=null;return heldLvl;}
+  const dir=r>h?1:-1;
+  if(winSince===null||dir!==winDir){winSince=now;winDir=dir;winExt=r;}else winExt=dir>0?Math.min(winExt,r):Math.max(winExt,r);
+  if(now-winSince>=HOLD_MS){winSince=null;return NAME[winExt];}
+  return heldLvl;
+ }
  // Unloaded readings wobble by about +/-0.5 pp (about +/-1,000 ue). Smooth over 1.5 s and show 0 inside that noise floor, with hysteresis so it does not flicker.
  const SMOOTH_MS=1500,ZERO_EXIT_PP=0.6,ZERO_ENTER_PP=0.4;let qBuf=[],zeroed=true;
  function smoothedQ(qRaw){
@@ -74,7 +85,7 @@ if(typeof document!=='undefined'){
   const sm=smoothedQ(qRaw),q=sm.q;
   const panel=$('strainPanel'),chip=$('levelChip'),est=q===null?null:(sm.zero?0:LiveData.strainFromDecrease(q)),rawLvl=LiveData.level(est,yellowAt,redAt),max=LiveData.MODEL.range[1];
   // Hold the level: a change is shown only after it has lasted HOLD_MS, so a single noisy reading cannot flash amber or red.
-  const nowT=Date.now();if(rawLvl===null){heldLvl=null;candLvl=null;}else if(heldLvl===null){heldLvl=rawLvl;candLvl=null;}else if(rawLvl===heldLvl){candLvl=null;}else if(rawLvl!==candLvl){candLvl=rawLvl;candAt=nowT;}else if(nowT-candAt>=HOLD_MS){heldLvl=rawLvl;candLvl=null;}
+  const nowT=Date.now();heldLvl=holdLevel(rawLvl,nowT);
   const lvl=heldLvl;
   const marks={safe:['SAFE','●'],approaching:['APPROACHING LIMIT','▲'],danger:['DANGER','■']};
   panel.dataset.level=lvl||'none';
