@@ -37,3 +37,25 @@ table.connect th,table.connect td{text-align:left!important;white-space:normal;w
 table.connect th:nth-child(1){width:22%}table.connect th:nth-child(2){width:26%}table.connect th:nth-child(3){width:38%}table.connect th:nth-child(4){width:14%}
 table.connect td:first-child{width:auto}
 @media(max-width:760px){table.connect{table-layout:auto}table.connect th,table.connect td{width:100%!important}}
+
+/* Denser layout: less empty space between sections, fuller columns */
+.project-hero{padding:38px 0 22px}
+.project-hero h1{margin:12px 0 14px}
+.oneline{margin:12px 0;padding:18px 24px}
+.flow{margin:12px 0 6px}
+.editorial-grid{grid-template-columns:minmax(220px,.62fr) 1.7fr;gap:34px;padding:26px 0;border-top:1px solid var(--line);align-items:start}
+.editorial-grid h2{font-size:24px;margin-top:8px}
+.editorial-grid>div:first-child{position:sticky;top:76px}
+.editorial-grid>div:last-child>p:first-child{margin-bottom:14px}
+.editorial-grid .method-list{margin:0}
+.editorial-grid .method-list li{margin-bottom:12px}
+.plan-green:not(#maritime) .method-list,.plan-red .method-list{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.plan-green:not(#maritime) .method-list li,.plan-red .method-list li{margin:0;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-left-width:4px}
+.plan-green:not(#maritime) .method-list li{border-left-color:#00732f}
+.plan-red .method-list li{border-left-color:#e4002b}
+.research-question{margin:14px 0 0;padding:22px 28px}
+.research-question h2{margin:8px 0}
+table.connect{margin:10px 0 14px}
+table.connect td{padding:11px 14px}
+.contact-guidance{margin:18px 0 28px}
+@media(max-width:900px){.editorial-grid{grid-template-columns:1fr;gap:12px;padding:20px 0}.editorial-grid>div:first-child{position:static}.plan-green:not(#maritime) .method-list,.plan-red .method-list{grid-template-columns:1fr}.research-question{padding:20px}}
