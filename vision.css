@@ -27,7 +27,7 @@ table.connect tr:last-child td{border-bottom:0}
 table.connect td b{display:block}
 table.connect .pl{font-size:11px;color:var(--muted)}
 .st{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1px;padding:4px 8px;border:1.5px solid;white-space:nowrap}
-.st.ok{background:#00732f;border-color:#00732f;color:#fff}.st.part{border-color:#111;color:#111}.st.pos{border-color:#e4002b;color:#c40022}
+.st.ok{background:#00732f;border-color:#00732f;color:#fff}.st.part{border-color:#111;color:#111}.st.pos{border-color:#e4002b;color:#c40022;border-style:dashed}.st.gap{background:#e4002b;border-color:#e4002b;color:#fff}
 [data-theme=dark] .st.part{border-color:#e8eef1;color:#e8eef1}[data-theme=dark] .st.pos{border-color:#ff5a5f;color:#ff5a5f}
 @media(max-width:760px){.flow{grid-template-columns:1fr}.flow>span{transform:rotate(90deg);justify-self:center}
 table.connect,table.connect tbody,table.connect tr,table.connect td{display:block;width:100%}table.connect thead{display:none}
@@ -59,3 +59,5 @@ table.connect{margin:10px 0 14px}
 table.connect td{padding:11px 14px}
 .contact-guidance{margin:18px 0 28px}
 @media(max-width:900px){.editorial-grid{grid-template-columns:1fr;gap:12px;padding:20px 0}.editorial-grid>div:first-child{position:static}.plan-green:not(#maritime) .method-list,.plan-red .method-list{grid-template-columns:1fr}.research-question{padding:20px}}
+
+[data-theme=dark] .st.gap{background:#ff5a5f;border-color:#ff5a5f;color:#111}
